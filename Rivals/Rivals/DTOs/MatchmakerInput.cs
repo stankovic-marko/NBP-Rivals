@@ -10,7 +10,5 @@ namespace Rivals.DTOs
         public string RivalId { get; set; }
 
         public int Rating { get; set; }
-
-        public string MatchmakerName { get; set; }
     }
 }
