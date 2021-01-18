@@ -95,18 +95,18 @@ namespace Rivals.Controllers
 
         // tbd
         [Route("GetMatches/{matchmakerName}")]
-        public IActionResult GetMatches(string matchmakerName)
+        public JsonResult GetMatches(string matchmakerName)
         {
-            var toRet = redisConn.ListRange("mm." + matchmakerName + ".matches").ToList();
-            redisConn.ListTrim("mm." + matchmakerName + ".matches", toRet.Count, -1);
-            return Ok(toRet.ToList());
+            var toRet = redisConn.ListRange("mm." + matchmakerName + ".matches").Select(x => x.ToString());
+            redisConn.ListTrim("mm." + matchmakerName + ".matches", toRet.Count(), -1);
+            return new JsonResult(toRet);
         }
 
         // tbd
         [Route("PeekMatches/{matchmakerName}")]
-        public IActionResult PeekMatches(string matchmakerName)
+        public JsonResult PeekMatches(string matchmakerName)
         {
-            return Ok(redisConn.ListRange("mm."+matchmakerName+".matches").ToArray());
+            return new JsonResult(redisConn.ListRange("mm." + matchmakerName + ".matches").Select(x => x.ToString()));
         }
 
 
