@@ -49,7 +49,31 @@ namespace Rivals.Controllers
                 return BadRequest("Matchmaker is not started");
             foreach (var input in matchmakerInput)
             {
-                redisConn.ListRightPush("mm." + matchmakerName + ".rt." + input.Rating, input.RivalId);
+                bool matchFound = false;
+                int i = 0;
+                while (!matchFound && i <= 25)
+                {
+                    var list = redisConn.ListRange("mm." + matchmakerName + ".rt." + (input.Rating + i)).ToList();
+                    if (list.Count > 0)
+                    {
+                        matchFound = true;
+                        break;
+                    }
+
+                    if(i > 0)
+                        i = -i;
+                    else
+                        i = -(i - 1);
+                }
+
+                if (matchFound)
+                {
+                    string rivalId = redisConn.ListLeftPop("mm." + matchmakerName + ".rt." + (input.Rating + i));
+                    redisConn.ListRightPush("mm." + matchmakerName + ".matches", input.RivalId + "-" + rivalId);
+                }
+                else
+                    redisConn.ListRightPush("mm." + matchmakerName + ".rt." + input.Rating, input.RivalId);
+
             }
             return Ok();
         }
@@ -82,7 +106,7 @@ namespace Rivals.Controllers
         [Route("PeekMatches/{matchmakerName}")]
         public IActionResult PeekMatches(string matchmakerName)
         {
-            return Ok(redisConn.ListRange("mm."+matchmakerName+".matches").ToList());
+            return Ok(redisConn.ListRange("mm."+matchmakerName+".matches").ToArray());
         }
 
 
