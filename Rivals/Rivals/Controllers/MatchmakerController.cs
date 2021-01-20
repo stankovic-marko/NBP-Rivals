@@ -36,6 +36,19 @@ namespace Rivals.Controllers
         [HttpPost]
         public IActionResult DisableMatchmaker(string name)
         {
+            var matchmakerOn = redisConn.StringGet("mm." + name + ".on").ToString();
+            if (matchmakerOn != "true")
+                return BadRequest("MM is not started");
+
+            var maxRt = redisConn.StringGet("mm." + name + ".maxrt").ToString();
+            if (!(maxRt == null || maxRt == ""))
+            {
+                int range = Int32.Parse(maxRt);
+                for (int i = 0; i < range; i++)
+                    redisConn.KeyDelete("mm." + name + ".rt." + i);
+                redisConn.KeyDelete("mm." + name + ".maxrt");
+                redisConn.KeyDelete("mm." + name + ".matches");
+            }
             redisConn.StringSet("mm."+name + ".on", "false");
             return Ok();
         }
@@ -72,8 +85,19 @@ namespace Rivals.Controllers
                     redisConn.ListRightPush("mm." + matchmakerName + ".matches", input.RivalId + "-" + rivalId);
                 }
                 else
+                {
+                    var maxRt = redisConn.StringGet("mm." + matchmakerName + ".maxrt").ToString();
+                    if (maxRt == null || maxRt == "")
+                    {
+                        redisConn.StringSet("mm." + matchmakerName + ".maxrt", input.Rating);
+                    }
+                    else
+                    {
+                        if (Int32.Parse(maxRt) < input.Rating)
+                            redisConn.StringSet("mm." + matchmakerName + ".maxrt", input.Rating);
+                    }
                     redisConn.ListRightPush("mm." + matchmakerName + ".rt." + input.Rating, input.RivalId);
-
+                }
             }
             return Ok();
         }
